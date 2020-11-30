@@ -484,7 +484,7 @@ public class Robot extends TimedRobot {
   }
   SmartDashboard.putNumber("seenColor",seenColor);
   
-if(gamePad0.getPOV() == 90){colMotor.set(1);}//joe mama
+if(gamePad0.getPOV() == 90){colMotor.set(1);}
 else{
   //Color Wheel Moter Must Turn Clockwise
   if (gamePad0.getRawButtonPressed(3)){rotatenum += 8;} //rotatenum is number of rotations asked for x2; e.g. setting for 8 makes 4 full rotations, setting for 7 gives 3.5 wheel rotations.
