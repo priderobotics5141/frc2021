@@ -39,10 +39,10 @@ import edu.wpi.first.wpilibj.DriverStation;
 
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
-
 import com.revrobotics.ColorSensorV3;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorMatch;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -52,48 +52,42 @@ import com.revrobotics.ColorMatch;
  * project.
  */
 public class Robot extends TimedRobot {
-
-  boolean win = true;
-  boolean ShotsMissed = false;
+  
   private static final String kCenter = "Center";
   private static final String kLeft = "Left";
   private static final String kRight = "Right";
   private static final String kOff = "Off";
 
-  private boolean test;
-
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-  private static final String kManual = "Manual";
-  private static final String kSensor = "Sensor";
+  String Mode ="manual";//manual v. sensor
 
-  private String m_controlSelected;
-  private final SendableChooser<String> m_control = new SendableChooser<>();
-
-  String Mode = "manual";// manual v. sensor
-
-  Joystick gamePad0 = new Joystick(0);
+  Joystick gamePad0 = new Joystick (0);
   /*
-   * Button mapping 1 - AutoFace 2 - Color 3 - Rotate 4 - Conveyer input ? 5 -
-   * Intake toggle 6 - Shooter 7 - 8 - Auto Kill
-   */
+  Button mapping
+  1 - AutoFace
+  2 - Color 
+  3 - Rotate
+  4 - Conveyer input ?
+  5 - Intake toggle
+  6 - Shooter
+  7 - 
+  8 - Auto Kill
+  */
   VictorSP left0 = new VictorSP(6);
   VictorSP left1 = new VictorSP(7);
   VictorSP right0 = new VictorSP(8);
   VictorSP right1 = new VictorSP(9);
-  SpeedControllerGroup leftDrive = new SpeedControllerGroup(left1, left0);
-  SpeedControllerGroup rightDrive = new SpeedControllerGroup(right0, right1);
+  SpeedControllerGroup leftDrive = new SpeedControllerGroup(left1,left0);
+  SpeedControllerGroup rightDrive = new SpeedControllerGroup(right0,right1);
   DifferentialDrive driveTrain = new DifferentialDrive(leftDrive, rightDrive);
   VictorSP colMotor = new VictorSP(3);
   VictorSP conveyor = new VictorSP(5);
   VictorSP shooter1 = new VictorSP(1);
   VictorSP shooter2 = new VictorSP(2);
-  SpeedControllerGroup shooter = new SpeedControllerGroup(shooter1, shooter2);
+  SpeedControllerGroup shooter = new SpeedControllerGroup(shooter1,shooter2);
   VictorSP intake = new VictorSP(4);
-  VictorSP climb = new VictorSP(0);
-  DigitalInput upperSwitch = new DigitalInput(6);
-  DigitalInput lowerSwitch = new DigitalInput(7);
   DigitalOutput ultrasonicPing1 = new DigitalOutput(0);
   DigitalInput ultrasonicEcho1 = new DigitalInput(1);
   DigitalOutput ultrasonicPing2 = new DigitalOutput(2);
@@ -108,9 +102,6 @@ public class Robot extends TimedRobot {
   //AHRS navx;
   
   Timer autoPilotTimer = new Timer();
-  Timer autonamousTimer = new Timer();
-  Timer autoPeriod = new Timer();
-
 
   double h2 = 92; //height of target "inches"156+7=163
   double h1 = 33; //height of camera
@@ -140,8 +131,7 @@ public class Robot extends TimedRobot {
   String gameData;
   String nextColor = "Purple Baby";
   String gameSadFace = "Mehh";
-  boolean manualMode = true;
-
+  
   private final I2C.Port cPort = I2C.Port.kOnboard;
   private final ColorSensorV3 cSensor = new ColorSensorV3(cPort);
   private final ColorMatch m_colorMatcher = new ColorMatch();
@@ -153,7 +143,7 @@ public class Robot extends TimedRobot {
   double yaw; 
     
    
-  //NetworkTable table;
+  NetworkTable table;
   NetworkTableEntry tx;
   NetworkTableEntry ty;
   NetworkTableEntry ta;
@@ -170,7 +160,6 @@ public class Robot extends TimedRobot {
   double range3;
 
   Timer warmUp = new Timer();
-  NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -182,10 +171,6 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("Right", kRight);
     m_chooser.addOption("Off", kOff);
     SmartDashboard.putData("Auto positions", m_chooser);
-
-    m_control.setDefaultOption("Manual", kManual);
-    m_control.addOption("Sensor", kSensor);
-    SmartDashboard.putData("Control Mode", m_control);
     
     //navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData, (byte)50);
     right0.setInverted(true);
@@ -202,18 +187,12 @@ public class Robot extends TimedRobot {
 
     autoPilotTimer.reset();
     autoPilotTimer.stop();
-    autonamousTimer.reset();
-    autonamousTimer.stop();
-    autoPeriod.reset();
-    autoPeriod.stop();
     //navx.reset();
     //navx.zeroYaw();
     colMotor.set(0);
     rotatenum = 0;
     seenColor = 0;
     warmUp.reset();
-   /* var yes = */table.getEntry("ledMode").setNumber(3);
-   /* System.out.println("asd:" + yes);*/
   }
 
   /**
@@ -251,25 +230,30 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Proximity", proximity);
     SmartDashboard.putNumber("Confidence", match.confidence);
     SmartDashboard.putString("Detected Color", colorString);
-    //double yaw = navx.getYaw();
 
-   NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
+    //double yaw = navx.getYaw();
+    
+   
+    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
     NetworkTableEntry tx = table.getEntry("tx");
     NetworkTableEntry ty = table.getEntry("ty");
     NetworkTableEntry ta = table.getEntry("ta");
     NetworkTableEntry tv = table.getEntry("tv");
+   
+    
+
 
     double x = (tx.getDouble(0.0)); // x & y is negative because limelight is upsidedown
     double y = (ty.getDouble(0.0));
     double a = ta.getDouble(0.0);
     double v = tv.getDouble(0.0);
 
-    double marginXerror = 172;//168
+    double marginXerror = 170;
     double ratioX = x/27;  //was (x-6)/27 on 3/9
     //double ratioY = (1.81-y)/20;  // was y/20 Based of angle target is seen at
     double ratioY = (disXnum-marginXerror)/25;  // Based of distance of target from dsXnum 108, 35
     double ratioA = (2.68 - a);//changed <--- thank you very cool 1/25
-    double minCorrectX = .25;
+    double minCorrectX = .1;
     double maxCorrectX = .6;
     double minCorrectY = .1;
     double maxCorrectY = .4;
@@ -280,6 +264,7 @@ public class Robot extends TimedRobot {
     
     SmartDashboard.putNumber("SineX", sineX);
     SmartDashboard.putNumber("SineY", sineY);
+
 
     if  (doAutoPilotNow && v==1) { //a button
       autoPilotStep = 1;
@@ -350,12 +335,6 @@ public class Robot extends TimedRobot {
     //teleopInit();
     m_autoSelected = m_chooser.getSelected();
 
-    autonamousTimer.reset();
-    autonamousTimer.stop();
-    autoPeriod.reset();
-    autoPeriod.stop();
-    table.getEntry("ledMode").setNumber(3);
-
   }
 
   /**
@@ -363,16 +342,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
-    NetworkTableEntry tx = table.getEntry("tx");
-    NetworkTableEntry ty = table.getEntry("ty");
-    NetworkTableEntry ta = table.getEntry("ta");
-    NetworkTableEntry tv = table.getEntry("tv");
-// Network Tables Never frickin Global
-    double x = (tx.getDouble(0.0)); // x & y is negative because limelight is upsidedown
-    double y = (ty.getDouble(0.0));
-    double a = ta.getDouble(0.0);
-    double v = tv.getDouble(0.0);
+    
     //teleopPeriodic();
     /*
     if( true ) {
@@ -388,28 +358,11 @@ public class Robot extends TimedRobot {
         // Put right auto code here
         break;
       case kCenter:
-      if(autonamousTimer.get() == 0){autonamousTimer.start();}
-      if (autonamousTimer.get() <= 1) {
-        driveTrain.tankDrive(-.5,-.5);
-        shooter.set(1);
-      }
-      else if(v!= 1) {
-        driveTrain.tankDrive(.45,-.45);
-      } else if (v == 1){
-                if(autoPeriod.get() == 0){autoPeriod.start();}
-                      doAutoPilotNow = true;
-                         if (autoPeriod.get() > 2 && autoPeriod.get() <= 4){
-                        doAutoPilotNow = false;
-                        conveyor.set(.7);
-                        intake.set(.5);
-                      }
-              }
-
-        break;
-        case kOff:
+        // Put center auto code here
+        driveTrain.tankDrive(.5,.5);
         break;
       default:
-        // funny
+        // Put center auto code here
         driveTrain.tankDrive(0,0);
         break;
     }
@@ -441,16 +394,12 @@ public class Robot extends TimedRobot {
     ultrasonic1.setEnabled(true);
     ultrasonic2.setEnabled(true);
     ultrasonic3.setEnabled(true);
-    table.getEntry("ledMode").setNumber(1);
-
   }
   /**
    * This function is called periodically during operator control.
    */
   @Override
   public void teleopPeriodic() {
-
-    m_controlSelected = m_control.getSelected();
 
   SmartDashboard.putString("gameData",gameData);
   //SmartDashboard.putString("DetectedColor",colorString); just so  Iremember
@@ -461,7 +410,7 @@ public class Robot extends TimedRobot {
   SmartDashboard.putNumber("ultrasonicRange2",ultrasonic2.getRangeMM());
   SmartDashboard.putNumber("ultrasonicRange3",ultrasonic3.getRangeMM());
   SmartDashboard.putBoolean("ultrasonic",ultrasonic1.isEnabled());
-  SmartDashboard.putBoolean("Intake Test", test);
+
 
   if(gameData.length() > 0) {
     switch (gameData.charAt(0)) {
@@ -483,9 +432,6 @@ public class Robot extends TimedRobot {
     }
   }
   SmartDashboard.putNumber("seenColor",seenColor);
-  
-if(gamePad0.getPOV() == 90){colMotor.set(1);}
-else{
   //Color Wheel Moter Must Turn Clockwise
   if (gamePad0.getRawButtonPressed(3)){rotatenum += 8;} //rotatenum is number of rotations asked for x2; e.g. setting for 8 makes 4 full rotations, setting for 7 gives 3.5 wheel rotations.
   if (rotatenum > 0){
@@ -536,22 +482,20 @@ else{
     nextColor = colorString;
     colMotor.stopMotor();
   }
-
-}
  /* if(ultrasonic1.getRangeMM()>0.1){range1 = ultrasonic1.getRangeMM();}
   if(ultrasonic2.getRangeMM()>0.1){range2 = ultrasonic2.getRangeMM();}
   if(ultrasonic3.getRangeMM()>0.1){range3 = ultrasonic1.getRangeMM();}*/
 
   if(ultrasonic1.getRangeMM() !=0.0){
-    if(ultrasonic1.getRangeMM() > 125){Ball1 = false;}
+    if(ultrasonic1.getRangeMM() > 200){Ball1 = false;}
     else{ Ball1 = true; }
   }
   if(ultrasonic2.getRangeMM() !=0.0){
-    if(ultrasonic2.getRangeMM() > 100){Ball2 = false;}
+  if(ultrasonic2.getRangeMM() > 200){Ball2 = false;}
   else{ Ball2 = true; }
 }
 if(ultrasonic3.getRangeMM() !=0.0){
-  if(ultrasonic3.getRangeMM() > 135){Ball3 = false;}
+  if(ultrasonic3.getRangeMM() > 200){Ball3 = false;}
   else{ Ball3 = true; }
 }
     ultrasonic1.ping();
@@ -560,68 +504,37 @@ if(ultrasonic3.getRangeMM() !=0.0){
 
     SmartDashboard.putNumber("WarmUP",warmUp.get());
 
-    if(gamePad0.getRawButtonPressed(7)){manualMode = !manualMode; intakeOn = false;}
-    SmartDashboard.putBoolean("Manual",manualMode);
-
-if(manualMode) {
-      
-      if(gamePad0.getPOV() != 270){intake.set(gamePad0.getRawAxis(2));}
+    switch (Mode.charAt(0)) {
+      case 'm' :
+      if(gamePad0.getPOV() != 180){intake.set(gamePad0.getRawAxis(2));}
       else {intake.set(-.5);}
-      if(gamePad0.getRawButton(5) && gamePad0.getPOV() != 270){
+      if(gamePad0.getRawButton(5) && gamePad0.getPOV() != 180){
         conveyor.set(1);
-      } else if(gamePad0.getPOV() == 270){conveyor.set(-.5);}
+      } else if(gamePad0.getPOV() == 180){conveyor.set(-.5);}
       else {conveyor.set(0);}
-    
-if(gamePad0.getRawButton(6)){shooter.set(1);}
+  
+      if(gamePad0.getRawButton(6)){shooter.set(1);}
       else{shooter.set(0);}
-  }
-else{
-      
-      if(gamePad0.getRawButtonPressed(4)){intakeOn = !intakeOn;}
-    
-      if(gamePad0.getRawButton(6)){//shooter Righth bumper
-        shooter.set( 1/*veloFwoosh*velocityToMotorRatio*/);//shooter value depending on target distance x and y
-      } else {shooter.set(0);}
-
-      if(gamePad0.getRawButton(5)){
-        //intake.set(.7);
-        conveyor.set(.7);
-      }
-      
-      if(intakeOn && !Ball3 && !gamePad0.getRawButton(6) && !gamePad0.getRawButton(5) && !(gamePad0.getPOV() == 270)){//auto intake
-        intake.set(.6);
-        if(Ball1 || Ball2){ //button 4 questionable, propose we do it autonomous
-          conveyor.set(.7);
-        } else{
-          conveyor.stopMotor();
-        }
-
-      }else if(gamePad0.getPOV() == 270){
-        intake.set(-.5);
-        conveyor.set(-.85);
-      }else if(!Ball1 && Ball3 && intakeOn) {//not shooting
-        intake.set(.65); //coolDown Turn off for testing
-      } else  if(!gamePad0.getRawButton(5)){//default
-        intake.stopMotor();
-        conveyor.stopMotor();
-      }
-        if(gamePad0.getPOV() == 270){
-          intakeOn = false;
-        }
+        break;
+      case 's' :
+        gameSadFace = "Y";
+        break;
     }
 
-    SmartDashboard.putBoolean("Upperswitch", upperSwitch.get());
-    SmartDashboard.putBoolean("Lowerswitch", lowerSwitch.get());
-
-    
-   if(gamePad0.getPOV() == 0 && upperSwitch.get()) {
-      climb.set(.7);
-    }else if(gamePad0.getPOV() == 180 && lowerSwitch.get()){
-      climb.set(-.7);
-    }else{//default
-     climb.set(0);
-    }
-
+        /*if(gamePad0.getRawButton(5))
+                                                                       {
+                                shooter.set(.5);  
+                                                                                            }
+    if(gamePad0.getPOV() == 90 )
+            {
+                                                                                                                                                                                                                        conveyor.set(.5);
+      }
+      if(gamePad0.getPOV() == 0){
+      shooter1.set(1);
+    }else{shooter1.set(0);}
+    if(gamePad0.getPOV() == 180){
+      intake.set(.9);
+    }*/
 
     if(autoPilotStep==0){
       SmartDashboard.putNumber("leftStick",gamePad0.getRawAxis(1));
