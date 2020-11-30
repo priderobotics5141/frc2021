@@ -543,7 +543,7 @@ else{
   if(ultrasonic3.getRangeMM()>0.1){range3 = ultrasonic1.getRangeMM();}*/
 
   if(ultrasonic1.getRangeMM() !=0.0){
-    if(ultrasonic1.getRangeMM() > 126){Ball1 = false;}
+    if(ultrasonic1.getRangeMM() > 125){Ball1 = false;}
     else{ Ball1 = true; }
   }
   if(ultrasonic2.getRangeMM() !=0.0){
