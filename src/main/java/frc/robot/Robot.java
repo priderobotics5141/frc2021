@@ -110,6 +110,7 @@ public class Robot extends TimedRobot {
   Timer autoPilotTimer = new Timer();
   Timer autonamousTimer = new Timer();
   Timer autoPeriod = new Timer();
+  Timer conveyorTimer = new Timer();
 
 
   double h2 = 92; //height of target "inches"156+7=163
@@ -592,8 +593,12 @@ else{
         intake.set(.6);
         if(Ball1 || Ball2){ //button 4 questionable, propose we do it autonomous
           conveyor.set(.7);
+          conveyorTimer.reset();
         } else{
-          conveyor.stopMotor();
+          conveyorTimer.start();
+            if(conveyorTimer.get() > .15){
+              conveyor.stopMotor();
+            }
         }
 
       }else if(gamePad0.getPOV() == 270){
