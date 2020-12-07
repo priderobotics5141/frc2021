@@ -8,9 +8,10 @@
 
 //Robot 1-25, http://10.51.41.11:5801/ 
 
+/* to do list
+  organize imports
+*/
 package frc.robot;
-
-import javax.swing.event.ChangeEvent;
 
 //import com.kauailabs.navx.frc.AHRS;
 //import com.kauailabs.navx.frc.AHRS.SerialDataType;
@@ -28,10 +29,9 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.SerialPort;
-import edu.wpi.first.wpilibj.Servo;
+//import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -123,12 +123,12 @@ public class Robot extends TimedRobot {
   double veloFwoosh; //angular velocity variable
   double velocityToMotorRatio = 1022; //conversion rate
 
-  int autoPilotStep = 0;
   int navxStep = 0;
   int rotatenum = 0;
   double targetAngle;
   boolean autoFace;
   double autoFaceTimeNeeded;
+  boolean autoPilotState = false;
   boolean doAutoPilotNow = false;
   boolean doubleAuto=false;
   double naenae; //it got less funny
@@ -177,15 +177,16 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+    // m_choosers on bottom
+    SmartDashboard.putData("Auto positions", m_chooser);
     m_chooser.setDefaultOption("Center", kCenter);
     m_chooser.addOption("Left", kLeft);
     m_chooser.addOption("Right", kRight);
     m_chooser.addOption("Off", kOff);
-    SmartDashboard.putData("Auto positions", m_chooser);
 
+    SmartDashboard.putData("Control Mode", m_control);
     m_control.setDefaultOption("Manual", kManual);
     m_control.addOption("Sensor", kSensor);
-    SmartDashboard.putData("Control Mode", m_control);
     
     //navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData, (byte)50);
     right0.setInverted(true);
@@ -282,49 +283,31 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("SineY", sineY);
 
     if  (doAutoPilotNow && v==1) { //a button
-      autoPilotStep = 1;
+      autoPilotState = true;
     }
     else {
       doAutoPilotNow=false;
-      autoPilotStep = 0;
+      autoPilotState = false;
     }
-    switch(autoPilotStep) {
-      case 1:
-      if(v==1){driveTrain.tankDrive(sineX+sineY,-(sineX)+sineY);}//.4
-      //if (x > -1 && x < 1 && disXnum > (marginXerror-.8) && disXnum < (marginXerror+.8)){autoPilotStep = 0;doAutoPilotNow = false;}
+
+    if(autoPilotState) {
+      if(v==1){driveTrain.tankDrive(sineX+sineY,-(sineX)+sineY);}
       if (x > -1 && x < 1 && disXnum > (marginXerror-1.5) && disXnum < (marginXerror+1.5)) {
-        if(autoPilotTimer.get() == 0){autoPilotTimer.start();}
-      }
+        if(autoPilotTimer.get() == 0){autoPilotTimer.start();}//autoPilotTimer stops prolonged aim jitter
+        }
       else {
         autoPilotTimer.reset();
         autoPilotTimer.stop();
       }
       if (autoPilotTimer.hasPeriodPassed(1)) {
-        autoPilotStep = 0;
+        autoPilotState = false;
         doAutoPilotNow = false;
       }
-      /*if (x > -.8 && x < .8 && ratioY > -.8 && ratioY < .8 && ratioA > -.8 && ratioA < .8){
-        autoPilotTimer.start();
-      }else{
-        autoPilotTimer.reset();
-        autoPilotTimer.stop();
-      }
-      if (autoPilotTimer.hasPeriodPassed(1)){
-        autoPilotStep = 0;
-        doAutoPilotNow = false;
-      }*/
-      break;
     }
-    // Potential Goldilocks, original dood distance y = 7.39
-    //((y < -1.48)?.25:-.25)
-    //(7.39-y)/20*.9
-    aimnum = Math.sqrt((disXnum*Math.tan(fixedAngle)*(disXnum)*(disXnum))/2*Math.pow(Math.cos(fixedAngle),2)*difYnum);
 
     //disXnum = ((h2-h1)/Math.tan((a1-y)*Math.PI/180));
-    disXnum = (h2-h1)/(Math.tan((a1+y)*Math.PI/180)) +7; //+7 is distance between shoter and limelight
-    airtim = Math.sqrt((2*Math.sin(fixedAngle)/3786.22)*((disXnum/Math.cos(fixedAngle))-(difYnum/Math.sin(fixedAngle))));
-    veloFwoosh = disXnum/(Math.cos(fixedAngle)*airtim);
-    //(h2-h1)*.1/Math.tan((a1-y))
+    disXnum = (h2-h1)/(Math.tan((a1+y)*Math.PI/180)) +7; //+7 is distance between shooter and limelight
+    
     SmartDashboard.putNumber("LimelightX", x);
     SmartDashboard.putNumber("LimelightY", y);
     SmartDashboard.putNumber("LimelightA", a);
@@ -368,16 +351,7 @@ public class Robot extends TimedRobot {
     NetworkTableEntry ty = table.getEntry("ty");
     NetworkTableEntry ta = table.getEntry("ta");
     NetworkTableEntry tv = table.getEntry("tv");
-// Network Tables Never frickin Global
-    double x = (tx.getDouble(0.0)); // x & y is negative because limelight is upsidedown
-    double y = (ty.getDouble(0.0));
-    double a = ta.getDouble(0.0);
-    double v = tv.getDouble(0.0);
-    //teleopPeriodic();
-    /*
-    if( true ) {
-      //
-    }*/
+
     switch (m_autoSelected) {
       case kLeft:
         // Put left auto code here
@@ -413,22 +387,7 @@ public class Robot extends TimedRobot {
         driveTrain.tankDrive(0,0);
         break;
     }
-    /*
-    switch (autoPosition.charAt(0)) {
-      case 'L':
-        driveTrain.tankDrive(-.5,.5);
-        break;
-      case 'C':
-        driveTrain.tankDrive(.5,.5);
-        break;
-      case 'R':
-        driveTrain.tankDrive(.5,-.5);
-        break;
-      default:
-        driveTrain.tankDrive(0,0);
-        break;
-    }
-*/
+   
   }
   @Override
   public void teleopInit() {
@@ -623,7 +582,7 @@ else{
     }
 
 
-    if(autoPilotStep==0){
+    if(!autoPilotState){
       SmartDashboard.putNumber("leftStick",gamePad0.getRawAxis(1));
       SmartDashboard.putNumber("rightStick",gamePad0.getRawAxis(5));
       double leftStick = (-gamePad0.getRawAxis(1)*.6)*(gamePad0.getRawAxis(3)+1);
@@ -633,7 +592,7 @@ else{
       driveTrain.tankDrive(leftStick,rightStick);//12/13 is motor ratio for simon none for flash
     }
 
-    if(autoPilotStep != 0 || autoFace){
+    if(autoPilotState || autoFace){
       gamePad0.setRumble(RumbleType.kRightRumble, 1);
       gamePad0.setRumble(RumbleType.kLeftRumble, 1);
     }
@@ -642,16 +601,16 @@ else{
       gamePad0.setRumble(RumbleType.kLeftRumble, 0); 
     }
     
-    SmartDashboard.putNumber("autopilot",autoPilotStep);
+    SmartDashboard.putBoolean("autopilot",autoPilotState);
 
     if(gamePad0.getRawButtonPressed(1)){doAutoPilotNow = !doAutoPilotNow;}
     if(gamePad0.getRawButtonPressed(6) || gamePad0.getRawButtonPressed(10) || Math.abs(gamePad0.getRawAxis(1)) >= .2 || Math.abs(gamePad0.getRawAxis(5)) >= .2) { //a button
-      autoPilotStep = 0;
+      autoPilotState = false;
       doAutoPilotNow=false;
     }
 
     if(gamePad0.getRawButtonPressed(8)){ //start button is kill switch for autoPilot, autoTurnLeft, and autoTurnRight
-      autoPilotStep=0;
+      autoPilotState = false;
       doAutoPilotNow=false;
       seenColor = 0;
       rotatenum = 0;
