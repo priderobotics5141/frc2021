@@ -410,7 +410,7 @@ public class Robot extends TimedRobot {
     ultrasonic1.setEnabled(true);
     ultrasonic2.setEnabled(true);
     ultrasonic3.setEnabled(true);
-    table.getEntry("ledMode").setNumber(1);
+    table.getEntry("ledMode").setNumber(3);
 
   }
 
@@ -571,7 +571,7 @@ public class Robot extends TimedRobot {
       } else {
         shooter.set(0);
       }
-    } else {
+    } else { //autoMode
 
       if (gamePad0.getRawButtonPressed(4)) {
         intakeOn = !intakeOn;
@@ -587,40 +587,44 @@ public class Robot extends TimedRobot {
         // intake.set(.7);
         conveyor.set(1);
       }
+      if (!gamePad0.getRawButton(6) || !gamePad0.getRawButton(5) || !(gamePad0.getPOV() == 270)) { // Not pressing these buttons
+        if (intakeOn && !Ball3) {// auto intake
+          intake.set(.6);
+          if (Ball1) { // button 4 questionable, propose we do it autonomous
+            conveyor.set(1);
+            conveyTimer.stop();
+            conveyTimer.reset();
+          } else {
+            if (conveyTimer.get() == 0) { // when clock is zero, start it
+              conveyTimer.start();
 
-      if (intakeOn && !Ball3 && !gamePad0.getRawButton(6) && !gamePad0.getRawButton(5) && !(gamePad0.getPOV() == 270)) {// auto
-                                                                                                                        // intake
-        intake.set(.6);
-        if (Ball1) { // button 4 questionable, propose we do it autonomous
-          conveyor.set(1);
-          conveyTimer.reset();
-          conveyTimer.stop();
-        } else {
-          if (conveyTimer.get() == 0) {
-            conveyTimer.start();
+            }
+            if (conveyTimer.get() >= .5) { // when clock is over X stop conveyor
+              if (conveyor.get() != 0) {
+                conveyor.stopMotor();
+              }
+
+            }
 
           }
-          if (conveyTimer.get() >= 1) {
-            conveyor.stopMotor();
 
-          }
-
+        } else if (gamePad0.getPOV() == 270) {
+          intake.set(-.5);
+          conveyor.set(-.85);
+        } else if (!Ball1 && Ball3 && intakeOn) {// not shooting
+          intake.set(.65); // coolDown Turn off for testing
+        } else {// default
+          intake.stopMotor();
+          conveyor.stopMotor();
+          conveyor.set(0);
         }
-
-      } else if (gamePad0.getPOV() == 270) {
-        intake.set(-.5);
-        conveyor.set(-.85);
-      } else if (!Ball1 && Ball3 && intakeOn) {// not shooting
-        intake.set(.65); // coolDown Turn off for testing
-      } else if (!gamePad0.getRawButton(5)) {// default
-        intake.stopMotor();
-        conveyor.stopMotor();
-      }
+    }
 
       if (gamePad0.getPOV() == 270) {
         intakeOn = false;
       }
     }
+  
 
     SmartDashboard.putBoolean("Upperswitch", upperSwitch.get());
     SmartDashboard.putBoolean("Lowerswitch", lowerSwitch.get());
