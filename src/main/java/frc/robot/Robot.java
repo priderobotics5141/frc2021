@@ -74,10 +74,10 @@ public class Robot extends TimedRobot {
    * Button mapping 1 - AutoFace 2 - Color 3 - Rotate 4 - Conveyer input ? 5 -
    * Intake toggle 6 - Shooter 7 - 8 - Auto Kill
    */
-  VictorSP left0 = new VictorSP(0);
-  VictorSP left1 = new VictorSP(1);
-  VictorSP right0 = new VictorSP(2);
-  VictorSP right1 = new VictorSP(3);
+  VictorSP right0 = new VictorSP(0);
+  VictorSP right1 = new VictorSP(1);
+  VictorSP left0 = new VictorSP(2);
+  VictorSP left1 = new VictorSP(3);
   SpeedControllerGroup leftDrive = new SpeedControllerGroup(left0, left1);
   SpeedControllerGroup rightDrive = new SpeedControllerGroup(right0, right1);
   DifferentialDrive driveTrain = new DifferentialDrive(leftDrive, rightDrive);
@@ -120,9 +120,12 @@ public class Robot extends TimedRobot {
 
     // navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData,
     // (byte)50);
-    right0.setInverted(true);
-    right1.setInverted(true);
-    CameraServer.getInstance().startAutomaticCapture(); //non-limelight camera declaration????? why is it here.
+    right0.setInverted(true); //false for flash
+    right1.setInverted(true); // false for flash
+    left0.setInverted(true); //true for flash
+    left1.setInverted(true); //true for flash
+
+    CameraServer.getInstance().startAutomaticCapture(); //non-li\melight camera declaration????? why is it here.
 
     // navx.reset();
     // navx.zeroYaw();
@@ -224,7 +227,6 @@ public class Robot extends TimedRobot {
     // double rightStick =
     // (-gamePad0.getRawAxis(5)*((gamePad0.getRawAxis(3)==1)?.6:.8));
     driveTrain.tankDrive(leftStick, rightStick);// 12/13 is motor ratio for simon none for flash
-
   }
 
   /**
