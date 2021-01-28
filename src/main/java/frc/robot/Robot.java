@@ -61,11 +61,17 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  private String m_controlSelected;
+  private final SendableChooser<String> m_control = new SendableChooser<>();
+
   private static final String kManual = "Manual";
   private static final String kSensor = "Sensor";
 
-  private String m_controlSelected;
-  private final SendableChooser<String> m_control = new SendableChooser<>();
+  private String m_challengeSelected;
+  private final SendableChooser<String> m_gameChosen = new SendableChooser<>();
+
+  private static final String kComp = "Competition";
+  private static final String kTask1 = "Task1";
 
   String Mode = "manual";// manual v. sensor
 
@@ -74,13 +80,15 @@ public class Robot extends TimedRobot {
    * Button mapping 1 - AutoFace 2 - Color 3 - Rotate 4 - Conveyer input ? 5 -
    * Intake toggle 6 - Shooter 7 - 8 - Auto Kill
    */
-  VictorSP left0 = new VictorSP(0);
-  VictorSP left1 = new VictorSP(1);
-  VictorSP right0 = new VictorSP(2);
-  VictorSP right1 = new VictorSP(3);
+  VictorSP right0 = new VictorSP(0);
+  VictorSP right1 = new VictorSP(1);
+  VictorSP left0 = new VictorSP(2);
+  VictorSP left1 = new VictorSP(3);
   SpeedControllerGroup leftDrive = new SpeedControllerGroup(left0, left1);
   SpeedControllerGroup rightDrive = new SpeedControllerGroup(right0, right1);
   DifferentialDrive driveTrain = new DifferentialDrive(leftDrive, rightDrive);
+
+  Timer challengeTimer = new Timer();
 
   // NetworkTable table;
   /** Limelight Modes
@@ -109,20 +117,27 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     // m_choosers on bottom
     SmartDashboard.putData("Auto positions", m_chooser);
-    m_chooser.setDefaultOption("Center", kCenter);
+    m_chooser.addOption("Center", kCenter);
     m_chooser.addOption("Left", kLeft);
     m_chooser.addOption("Right", kRight);
-    m_chooser.addOption("Off", kOff);
+    m_chooser.setDefaultOption("Off", kOff);
 
     SmartDashboard.putData("Control Mode", m_control);
     m_control.setDefaultOption("Manual", kManual);
     m_control.addOption("Sensor", kSensor);
 
+    SmartDashboard.putData("Game Mode", m_gameChosen);
+    m_control.setDefaultOption("Competition", kComp);
+    m_control.addOption("Task1", kTask1);
+
     // navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData,
     // (byte)50);
-    right0.setInverted(true);
-    right1.setInverted(true);
-    CameraServer.getInstance().startAutomaticCapture(); //non-limelight camera declaration????? why is it here.
+    right0.setInverted(true); //false for flash
+    right1.setInverted(true); // false for flash
+    left0.setInverted(true); //true for flash
+    left1.setInverted(true); //true for flash
+
+    CameraServer.getInstance().startAutomaticCapture(); //non-li\melight camera declaration????? why is it here.
 
     // navx.reset();
     // navx.zeroYaw();
@@ -144,16 +159,16 @@ public class Robot extends TimedRobot {
 
     // double yaw = navx.getYaw();
 
-    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
-    NetworkTableEntry tx = table.getEntry("tx");
-    NetworkTableEntry ty = table.getEntry("ty");
-    NetworkTableEntry ta = table.getEntry("ta");
-    NetworkTableEntry tv = table.getEntry("tv");
+    final NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
+    final NetworkTableEntry tx = table.getEntry("tx");
+    final NetworkTableEntry ty = table.getEntry("ty");
+    final NetworkTableEntry ta = table.getEntry("ta");
+    final NetworkTableEntry tv = table.getEntry("tv");
 
-    double x = (tx.getDouble(0.0)); // x & y is negative because limelight is upsidedown
-    double y = (ty.getDouble(0.0));
-    double a = ta.getDouble(0.0);
-    double v = tv.getDouble(0.0);
+    final double x = (tx.getDouble(0.0)); // x & y is negative because limelight is upsidedown
+    final double y = (ty.getDouble(0.0));
+    final double a = ta.getDouble(0.0);
+    final double v = tv.getDouble(0.0);
 
     SmartDashboard.putNumber("LimelightX", x);
     SmartDashboard.putNumber("LimelightY", y);
@@ -163,6 +178,7 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousInit() {
     m_autoSelected = m_chooser.getSelected();
+    m_challengeSelected = m_gameChosen.getSelected();
 
     table.getEntry("ledMode").setNumber(3);
 
@@ -173,11 +189,11 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
-    NetworkTableEntry tx = table.getEntry("tx");
-    NetworkTableEntry ty = table.getEntry("ty");
-    NetworkTableEntry ta = table.getEntry("ta");
-    NetworkTableEntry tv = table.getEntry("tv");
+    final NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
+    final NetworkTableEntry tx = table.getEntry("tx");
+    final NetworkTableEntry ty = table.getEntry("ty");
+    final NetworkTableEntry ta = table.getEntry("ta");
+    final NetworkTableEntry tv = table.getEntry("tv");
 
     switch (m_autoSelected) {
     case kLeft:
@@ -193,9 +209,33 @@ public class Robot extends TimedRobot {
     case kOff:
       break;
     default:
-      // funny
-      driveTrain.tankDrive(0, 0);
       break;
+    }
+
+
+      switch (m_challengeSelected) {
+        case kComp:
+          // Put left auto targetting and shooting code here
+          break;
+
+//Use Yellow Limelight Snapshot setting
+        case kTask1:
+          if (challengeTimer.get() == 0) {
+            challengeTimer.start();
+          } 
+
+          if( y < 0 /*arbituary blueBall_location*/ ) {
+            
+           }
+          
+           else  { //red config
+
+          }
+
+
+          break;
+        default:
+          break;
     }
 
   }
@@ -217,14 +257,13 @@ public class Robot extends TimedRobot {
 
     SmartDashboard.putNumber("leftStick", gamePad0.getRawAxis(1));
     SmartDashboard.putNumber("rightStick", gamePad0.getRawAxis(5));
-    double leftStick = (-gamePad0.getRawAxis(1) * .6) * (gamePad0.getRawAxis(3) + 1);
+    final double leftStick = (-gamePad0.getRawAxis(1) * .6) * (gamePad0.getRawAxis(3) + 1);
     // double leftStick =
     // (-gamePad0.getRawAxis(1)*((gamePad0.getRawAxis(3)==1)?.6:.8));
-    double rightStick = (-gamePad0.getRawAxis(5) * .6) * (gamePad0.getRawAxis(3) + 1);
+    final double rightStick = (-gamePad0.getRawAxis(5) * .6) * (gamePad0.getRawAxis(3) + 1);
     // double rightStick =
     // (-gamePad0.getRawAxis(5)*((gamePad0.getRawAxis(3)==1)?.6:.8));
     driveTrain.tankDrive(leftStick, rightStick);// 12/13 is motor ratio for simon none for flash
-
   }
 
   /**
