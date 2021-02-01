@@ -13,8 +13,8 @@
 */
 package frc.robot;
 
-//import com.kauailabs.navx.frc.AHRS;
-//import com.kauailabs.navx.frc.AHRS.SerialDataType;
+import com.kauailabs.navx.frc.AHRS;
+import com.kauailabs.navx.frc.AHRS.SerialDataType;
 
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -88,6 +88,8 @@ public class Robot extends TimedRobot {
   SpeedControllerGroup rightDrive = new SpeedControllerGroup(right0, right1);
   DifferentialDrive driveTrain = new DifferentialDrive(leftDrive, rightDrive);
 
+  AHRS navx;
+
   Timer challengeTimer = new Timer();
 
   // NetworkTable table;
@@ -137,6 +139,9 @@ public class Robot extends TimedRobot {
     left0.setInverted(true); //true for flash
     left1.setInverted(true); //true for flash
 
+    navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData, (byte)50);
+    navx.zeroYaw();
+
     CameraServer.getInstance().startAutomaticCapture(); //non-li\melight camera declaration????? why is it here.
 
     // navx.reset();
@@ -157,7 +162,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
 
-    // double yaw = navx.getYaw();
+    double yaw = navx.getYaw();
+    SmartDashboard.putNumber("Yaw",navx.getYaw());
 
     final NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
     final NetworkTableEntry tx = table.getEntry("tx");
@@ -181,6 +187,8 @@ public class Robot extends TimedRobot {
     m_challengeSelected = m_gameChosen.getSelected();
 
     table.getEntry("ledMode").setNumber(3);
+
+    navx.zeroYaw();
 
   }
 
