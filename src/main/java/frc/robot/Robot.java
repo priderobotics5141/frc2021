@@ -89,9 +89,12 @@ public class Robot extends TimedRobot {
   DifferentialDrive driveTrain = new DifferentialDrive(leftDrive, rightDrive);
 
   AHRS navx;
+  boolean navDrive;
+  int setAngle = 45;
 
   Timer challengeTimer = new Timer();
-
+  int challengeTimerCheckpoint;
+  double route;
   // NetworkTable table;
   /** Limelight Modes
    *  0 - use the LED Mode set in the current pipeline
@@ -108,7 +111,13 @@ public class Robot extends TimedRobot {
   double a;
   double v;
 
+/*  enum ROUTES {
+    BLUE,
+    RED,
+    GREEN
+  }
 
+  if(ROUTES.BLUE) {}*/
   NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
 
   /**
@@ -129,8 +138,8 @@ public class Robot extends TimedRobot {
     m_control.addOption("Sensor", kSensor);
 
     SmartDashboard.putData("Game Mode", m_gameChosen);
-    m_control.setDefaultOption("Competition", kComp);
-    m_control.addOption("Task1", kTask1);
+    m_gameChosen.setDefaultOption("Competition", kComp);
+    m_gameChosen.addOption("Task1", kTask1);
 
     // navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData,
     // (byte)50);
@@ -141,6 +150,7 @@ public class Robot extends TimedRobot {
 
     navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData, (byte)50);
     navx.zeroYaw();
+    navx.reset();
 
     CameraServer.getInstance().startAutomaticCapture(); //non-li\melight camera declaration????? why is it here.
 
@@ -179,6 +189,25 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("LimelightX", x);
     SmartDashboard.putNumber("LimelightY", y);
     SmartDashboard.putNumber("LimelightA", a);
+
+    double ratioNavX;
+    double AOC = 60; //Area of correction
+    if(yaw < AOC && yaw > -(AOC)){
+      ratioNavX = (yaw - setAngle)/AOC;
+    } else if (yaw > 0){
+      ratioNavX = 1;
+    } else { ratioNavX = -1;}
+
+    double minCorrectNavX = .3;
+    double maxCorrectNavX = .6;
+
+    //double sineWithSignum = Math.signum(ratioNavX)*(1-min)*Math.sin(ratioNavX*Math.PI/2)+(1+min)/2;
+    double sineNavX = Math.signum(ratioNavX)*((maxCorrectNavX - minCorrectNavX)/2)*Math.sin(Math.PI*(ratioNavX-.5))+Math.signum(ratioNavX)*((maxCorrectNavX + minCorrectNavX)/2);
+
+    if(navDrive){driveTrain.tankDrive(-sineNavX,sineNavX);}
+
+    SmartDashboard.putBoolean("navDrive", navDrive);
+
   }
 
   @Override
@@ -189,6 +218,7 @@ public class Robot extends TimedRobot {
     table.getEntry("ledMode").setNumber(3);
 
     navx.zeroYaw();
+    navx.reset();
 
   }
 
@@ -229,16 +259,17 @@ public class Robot extends TimedRobot {
 //Use Yellow Limelight Snapshot setting
         case kTask1:
           if (challengeTimer.get() == 0) {
+            route = y;
             challengeTimer.start();
           } 
 
-          if( y < 0 /*arbituary blueBall_location*/ ) {
+          if( route < 0 /*arbituary blueBall_location*/ ) {
             
-           }
+            }
           
            else  { //red config
 
-          }
+            }
 
 
           break;
@@ -253,6 +284,9 @@ public class Robot extends TimedRobot {
 
     table.getEntry("ledMode").setNumber(3);
 
+    navx.zeroYaw();
+    navx.reset();
+
   }
 
   /**
@@ -265,6 +299,7 @@ public class Robot extends TimedRobot {
 
     SmartDashboard.putNumber("leftStick", gamePad0.getRawAxis(1));
     SmartDashboard.putNumber("rightStick", gamePad0.getRawAxis(5));
+    
     final double leftStick = (-gamePad0.getRawAxis(1) * .6) * (gamePad0.getRawAxis(3) + 1);
     // double leftStick =
     // (-gamePad0.getRawAxis(1)*((gamePad0.getRawAxis(3)==1)?.6:.8));
@@ -272,6 +307,12 @@ public class Robot extends TimedRobot {
     // double rightStick =
     // (-gamePad0.getRawAxis(5)*((gamePad0.getRawAxis(3)==1)?.6:.8));
     driveTrain.tankDrive(leftStick, rightStick);// 12/13 is motor ratio for simon none for flash
+
+    if (gamePad0.getRawButton(1)){
+      navDrive = true;
+    } else {navDrive = false;}
+
+    
   }
 
   /**
