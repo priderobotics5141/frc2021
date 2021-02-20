@@ -259,13 +259,14 @@ public class Robot extends TimedRobot {
 }
   @Override
   public void autonomousInit() {
-    m_autoSelected = m_chooser.getSelected();
-    m_challengeSelected = m_challange.getSelected();
 
     table.getEntry("ledMode").setNumber(3);
 
     navx.zeroYaw();
     navx.reset();
+
+    challengeTimer.stop();
+    challengeTimer.reset();
 
   }
 
@@ -279,6 +280,9 @@ public class Robot extends TimedRobot {
     final NetworkTableEntry ty = table.getEntry("ty");
     final NetworkTableEntry ta = table.getEntry("ta");
     final NetworkTableEntry tv = table.getEntry("tv");
+
+    m_autoSelected = m_chooser.getSelected();
+    m_challengeSelected = m_challange.getSelected();
 
 
     switch (m_autoSelected) {
@@ -300,12 +304,11 @@ public class Robot extends TimedRobot {
 
     SmartDashboard.putNumber("challengeTimer", challengeTimer.get());
     SmartDashboard.putNumber("route number", challengeTimer.get());
-/*
-    if (gamePad0.getRawButton(3)) { System.out.println("kComp");  
+  
       switch (m_challengeSelected) {
         case kComp:
           // Put left auto targetting and shooting code here
-          System.out.println("kComp");
+          //driveTrain.tankDrive(-.5, .5);
           break;
 
         //Use Yellow Limelight Snapshot setting
@@ -329,7 +332,7 @@ public class Robot extends TimedRobot {
           break;
     }
 
-  }if bracket*/
+
 
   }
 
