@@ -68,7 +68,7 @@ public class Robot extends TimedRobot {
   private static final String kSensor = "Sensor";
 
   private String m_challengeSelected;
-  private final SendableChooser<String> m_gameChosen = new SendableChooser<>();
+  private final SendableChooser<String> m_challange = new SendableChooser<>();
 
   private static final String kComp = "Competition";
   private static final String kTask1 = "Task1";
@@ -89,8 +89,10 @@ public class Robot extends TimedRobot {
   DifferentialDrive driveTrain = new DifferentialDrive(leftDrive, rightDrive);
 
   AHRS navx;
-  boolean navDrive;
-  int setAngle = 45;
+  String navDrive = "null";
+  int setAngle;
+  double angledYaw;
+  double AOC = 85; //Area of correction
 
   Timer challengeTimer = new Timer();
   int challengeTimerCheckpoint;
@@ -110,6 +112,9 @@ public class Robot extends TimedRobot {
   double y;
   double a;
   double v;
+
+  double minCorrectNavX = .34;
+  double maxCorrectNavX = .65;
 
 /*  enum ROUTES {
     BLUE,
@@ -137,9 +142,9 @@ public class Robot extends TimedRobot {
     m_control.setDefaultOption("Manual", kManual);
     m_control.addOption("Sensor", kSensor);
 
-    SmartDashboard.putData("Game Mode", m_gameChosen);
-    m_gameChosen.setDefaultOption("Competition", kComp);
-    m_gameChosen.addOption("Task1", kTask1);
+    SmartDashboard.putData("Game Mode", m_challange);
+    m_challange.setDefaultOption("Competition", kComp);
+    m_challange.addOption("Task1", kTask1);
 
     // navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData,
     // (byte)50);
@@ -152,7 +157,7 @@ public class Robot extends TimedRobot {
     navx.zeroYaw();
     navx.reset();
 
-    CameraServer.getInstance().startAutomaticCapture(); //non-li\melight camera declaration????? why is it here.
+  //  CameraServer.getInstance().startAutomaticCapture(); //non-li\melight camera declaration????? why is it here.
 
     // navx.reset();
     // navx.zeroYaw();
@@ -189,31 +194,73 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("LimelightX", x);
     SmartDashboard.putNumber("LimelightY", y);
     SmartDashboard.putNumber("LimelightA", a);
-
+    
     double ratioNavX;
-    double AOC = 60; //Area of correction
-    if(yaw < AOC && yaw > -(AOC)){
-      ratioNavX = (yaw - setAngle)/AOC;
-    } else if (yaw > 0){
+    setAngle = 0;
+
+    if (Math.abs(yaw - setAngle) <= 180){
+      angledYaw = yaw - setAngle;
+    }else{
+      angledYaw = -Math.signum(yaw - setAngle)*(360-Math.abs(yaw - setAngle));
+    }
+
+    if(Math.abs(angledYaw) < (AOC)) {
+      ratioNavX =angledYaw/AOC;
+    } else if (angledYaw > 0){
       ratioNavX = 1;
     } else { ratioNavX = -1;}
 
-    double minCorrectNavX = .3;
-    double maxCorrectNavX = .6;
-
     //double sineWithSignum = Math.signum(ratioNavX)*(1-min)*Math.sin(ratioNavX*Math.PI/2)+(1+min)/2;
     double sineNavX = Math.signum(ratioNavX)*((maxCorrectNavX - minCorrectNavX)/2)*Math.sin(Math.PI*(ratioNavX-.5))+Math.signum(ratioNavX)*((maxCorrectNavX + minCorrectNavX)/2);
+    
+  if(navDrive.length() > 0) {
+    switch (navDrive.charAt(0)) {
+      case 'T' :
+        minCorrectNavX = .34;
+        maxCorrectNavX = .65;
+        AOC = 85;
 
-    if(navDrive){driveTrain.tankDrive(-sineNavX,sineNavX);}
+        driveTrain.tankDrive(-sineNavX,sineNavX);
+        break;
+      case 'D' :
+        minCorrectNavX = 0.5;//.4
+        maxCorrectNavX = 1;//.75
+        AOC = 15;//15
 
-    SmartDashboard.putBoolean("navDrive", navDrive);
+        double cCorrection = (-sineNavX > 0) ? -sineNavX : minCorrectNavX;
+        double ccCorrection  = (sineNavX > 0) ? sineNavX : minCorrectNavX;
 
+        driveTrain.tankDrive(cCorrection,ccCorrection);
+       /*
+        if (angledYaw > 0) {
+          driveTrain.tankDrive(
+            (maxCorrectNavX-minCorrectNavX) * (angledYaw/180) + minCorrectNavX,
+            (maxCorrectNavX-minCorrectNavX) - (maxCorrectNavX-minCorrectNavX) * (angledYaw/180) + minCorrectNavX
+        );  
+        }
+        else {
+          driveTrain.tankDrive(
+          (maxCorrectNavX-minCorrectNavX) - (maxCorrectNavX-minCorrectNavX) * (angledYaw/180) + minCorrectNavX,
+          (maxCorrectNavX-minCorrectNavX) * (angledYaw/180) + minCorrectNavX
+        );
+
+        }*/
+        
+    
+        break;
+      default :
+        minCorrectNavX = .34;
+        maxCorrectNavX = .65;
+        AOC = 85;
+        break;
+  }
   }
 
+}
   @Override
   public void autonomousInit() {
     m_autoSelected = m_chooser.getSelected();
-    m_challengeSelected = m_gameChosen.getSelected();
+    m_challengeSelected = m_challange.getSelected();
 
     table.getEntry("ledMode").setNumber(3);
 
@@ -233,6 +280,7 @@ public class Robot extends TimedRobot {
     final NetworkTableEntry ta = table.getEntry("ta");
     final NetworkTableEntry tv = table.getEntry("tv");
 
+
     switch (m_autoSelected) {
     case kLeft:
       // Put left auto code here
@@ -250,25 +298,29 @@ public class Robot extends TimedRobot {
       break;
     }
 
-
+    SmartDashboard.putNumber("challengeTimer", challengeTimer.get());
+    SmartDashboard.putNumber("route number", challengeTimer.get());
+/*
+    if (gamePad0.getRawButton(3)) { System.out.println("kComp");  
       switch (m_challengeSelected) {
         case kComp:
           // Put left auto targetting and shooting code here
+          System.out.println("kComp");
           break;
 
-//Use Yellow Limelight Snapshot setting
+        //Use Yellow Limelight Snapshot setting
         case kTask1:
           if (challengeTimer.get() == 0) {
             route = y;
             challengeTimer.start();
           } 
 
-          if( route < 0 /*arbituary blueBall_location*/ ) {
-            
+          if( route < 0 ) {
+              //
             }
           
            else  { //red config
-
+              //
             }
 
 
@@ -276,6 +328,8 @@ public class Robot extends TimedRobot {
         default:
           break;
     }
+
+  }if bracket*/
 
   }
 
@@ -308,11 +362,21 @@ public class Robot extends TimedRobot {
     // (-gamePad0.getRawAxis(5)*((gamePad0.getRawAxis(3)==1)?.6:.8));
     driveTrain.tankDrive(leftStick, rightStick);// 12/13 is motor ratio for simon none for flash
 
-    if (gamePad0.getRawButton(1)){
-      navDrive = true;
-    } else {navDrive = false;}
 
-    
+    if (gamePad0.getRawButton(1)){
+      navDrive = "Turn";
+    } else if (gamePad0.getRawButton(2)) {
+      navDrive = "Drive";
+    } else {
+      navDrive = "null";
+    }
+
+    if (gamePad0.getRawButton(5)){
+      navx.zeroYaw();
+      navx.reset();
+    }
+
+
   }
 
   /**
