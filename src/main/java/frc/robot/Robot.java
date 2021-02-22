@@ -90,13 +90,14 @@ public class Robot extends TimedRobot {
 
   AHRS navx;
   String navDrive = "null";
-  int setAngle;
+  int setAngle = 0;
   double angledYaw;
   double AOC = 85; //Area of correction
 
   Timer challengeTimer = new Timer();
   int challengeTimerCheckpoint;
   double route;
+  boolean turnProgress = true;
   // NetworkTable table;
   /** Limelight Modes
    *  0 - use the LED Mode set in the current pipeline
@@ -156,6 +157,7 @@ public class Robot extends TimedRobot {
     navx = new AHRS(SerialPort.Port.kMXP, SerialDataType.kProcessedData, (byte)50);
     navx.zeroYaw();
     navx.reset();
+    navDrive = "null";
 
   //  CameraServer.getInstance().startAutomaticCapture(); //non-li\melight camera declaration????? why is it here.
 
@@ -196,7 +198,6 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("LimelightA", a);
     
     double ratioNavX;
-    setAngle = 0;
 
     if (Math.abs(yaw - setAngle) <= 180){
       angledYaw = yaw - setAngle;
@@ -215,8 +216,13 @@ public class Robot extends TimedRobot {
     
   if(navDrive.length() > 0) {
     switch (navDrive.charAt(0)) {
+      default :
+      minCorrectNavX = .39;
+      maxCorrectNavX = .65;
+      AOC = 85;
+      break;
       case 'T' :
-        minCorrectNavX = .34;
+        minCorrectNavX = .39; //.34
         maxCorrectNavX = .65;
         AOC = 85;
 
@@ -248,11 +254,6 @@ public class Robot extends TimedRobot {
         
     
         break;
-      default :
-        minCorrectNavX = .34;
-        maxCorrectNavX = .65;
-        AOC = 85;
-        break;
   }
   }
 
@@ -267,6 +268,11 @@ public class Robot extends TimedRobot {
 
     challengeTimer.stop();
     challengeTimer.reset();
+    navDrive = "null";
+    turnProgress = true;
+
+
+    
 
   }
 
@@ -318,9 +324,38 @@ public class Robot extends TimedRobot {
             challengeTimer.start();
           } 
 
-          if( route < 0 ) {
-              //
+          if( route <= 0 ) {
+
+          if(turnProgress){
+            if(challengeTimer.get() < 5) {
+              setAngle = -135;
+              challengeTimerCheckpoint = 5;
+              driveTrain.tankDrive(-.5, .5);
+            } else if (challengeTimer.get() < 10) {
+              setAngle = -150;
+              challengeTimerCheckpoint = 10;
+              driveTrain.tankDrive(.5, -.5);
+            } 
+          }
+          
+
+            if(((int)challengeTimer.get()) == challengeTimerCheckpoint) { //move forward to first ball
+              turnProgress = false;
+              challengeTimer.stop();
+              driveTrain.tankDrive(0, 0);
+              if (Math.abs(angledYaw) <= 2) {
+                navDrive = "null";
+                challengeTimer.start();
+                turnProgress = true;
+              } else {
+                navDrive = "Turn";
+                challengeTimer.stop();
+                }
+              }
+
+
             }
+          
           
            else  { //red config
               //
