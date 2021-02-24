@@ -97,7 +97,6 @@ public class Robot extends TimedRobot {
   Timer challengeTimer = new Timer();
   int challengeTimerCheckpoint;
   double route;
-  boolean turnProgress = true;
   // NetworkTable table;
   /** Limelight Modes
    *  0 - use the LED Mode set in the current pipeline
@@ -269,7 +268,6 @@ public class Robot extends TimedRobot {
     challengeTimer.stop();
     challengeTimer.reset();
     navDrive = "null";
-    turnProgress = true;
 
 
     
@@ -324,37 +322,24 @@ public class Robot extends TimedRobot {
             challengeTimer.start();
           } 
 
-          if( route <= 0 ) {
+          if( route <= 0 ) { //blue config
 
-          if(turnProgress){
-            if(challengeTimer.get() < 5) {
-              setAngle = -135;
-              challengeTimerCheckpoint = 5;
-              driveTrain.tankDrive(-.5, .5);
-            } else if (challengeTimer.get() < 10) {
-              setAngle = -150;
-              challengeTimerCheckpoint = 10;
-              driveTrain.tankDrive(.5, -.5);
+            if(challengeTimer.get() < 2) { // following seconds are ~1 second(s) are shorter
+              navDrive = "Drive";
+            } else if(((int)challengeTimer.get()) == 2){
+              turnThing(180, 2);
             } 
-          }
-          
-
-            if(((int)challengeTimer.get()) == challengeTimerCheckpoint) { //move forward to first ball
-              turnProgress = false;
-              challengeTimer.stop();
-              driveTrain.tankDrive(0, 0);
-              if (Math.abs(angledYaw) <= 2) {
-                navDrive = "null";
-                challengeTimer.start();
-                turnProgress = true;
-              } else {
-                navDrive = "Turn";
-                challengeTimer.stop();
-                }
-              }
+            else if (challengeTimer.get() < 5) {//this if is broken, also check if turn progress bollean is ok
+              navDrive = "Drive";
+            } else if(((int)challengeTimer.get()) == 5){
+              turnThing(0, 5);
+            } else {
+              challengeTimer.reset();
+            }
 
 
             }
+
           
           
            else  { //red config
@@ -423,5 +408,20 @@ public class Robot extends TimedRobot {
 
   @Override
   public void testPeriodic() {
+  }
+
+  public void turnThing(int angle, int time) {
+    setAngle = angle;
+    if(((int)challengeTimer.get()) == time) { //move forward to first ball
+      challengeTimer.stop();
+      driveTrain.tankDrive(0, 0);
+      if (Math.abs(angledYaw) <= 2) {
+        navDrive = "null";
+        challengeTimer.start();
+      } else {
+        navDrive = "Turn";
+        challengeTimer.stop();
+        }
+      }
   }
 }
